@@ -21,6 +21,13 @@ namespace BackgroundMuter
             StartListeningForWindowChanges();
         }
 
+        protected override void OnLoad(EventArgs e)
+        {
+            Visible = false;
+            Opacity = 0;
+            base.OnLoad(e);
+        }
+
         private void Init()
         {
             Visible = false;

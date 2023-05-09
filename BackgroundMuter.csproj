@@ -26,9 +26,9 @@
     <InstallUrl>https://raw.githubusercontent.com/Vios276/BackgroundMuter/master/publish/</InstallUrl>
     <UpdateUrl>https://raw.githubusercontent.com/Vios276/BackgroundMuter/master/publish/</UpdateUrl>
     <PublisherName>Vios</PublisherName>
-    <CreateWebPageOnPublish>true</CreateWebPageOnPublish>
     <WebPage>publish.htm</WebPage>
-    <ApplicationRevision>2</ApplicationRevision>
+    <OpenBrowserOnPublish>false</OpenBrowserOnPublish>
+    <ApplicationRevision>3</ApplicationRevision>
     <ApplicationVersion>1.0.0.%2a</ApplicationVersion>
     <UseApplicationTrust>false</UseApplicationTrust>
     <PublishWizardCompleted>true</PublishWizardCompleted>
