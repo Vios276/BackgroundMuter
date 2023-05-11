@@ -11,13 +11,14 @@ namespace BackgroundMuter
 {
     public partial class BackgroundMuter : Form
     {
-        private int _targetId;
+        private int _targetId = -1;
+        private const string TargetName = "starrail";
         private readonly RegistryKey _key = Registry.CurrentUser.OpenSubKey("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run", true);
         public BackgroundMuter()
         {
             InitializeComponent();
             Init();
-            VolumeMixer.SetApplicationMute(_targetId, GetActiveProcessFileName() != "StarRail");
+            ChangeMuteState();
             StartListeningForWindowChanges();
         }
 
@@ -30,13 +31,13 @@ namespace BackgroundMuter
 
         private void Init()
         {
-            Visible = false;
+            GetTargetProcess();
+            SetStripAutoStart();
+            SetStripVersion();
+        }
 
-            _targetId = (from process in Process.GetProcesses()
-                where process.ProcessName == "StarRail" && !string.IsNullOrEmpty(process.MainWindowTitle)
-                select process.Id).FirstOrDefault();
-
-            ToolStripMenuItem_AutoStart.Checked = _key.GetValue(Name) != null;
+        private void SetStripVersion()
+        {
             if (ApplicationDeployment.IsNetworkDeployed)
             {
                 var intMajor = ApplicationDeployment.CurrentDeployment.CurrentVersion﻿.Major;
@@ -46,11 +47,24 @@ namespace BackgroundMuter
             }
             else
             {
-                ToolStripMenuItem_version.Text = $@"Develop Build";
+                ToolStripMenuItem_version.Text = $@"Portable Build";
             }
-            
         }
-        
+
+        private void SetStripAutoStart()
+        {
+            ToolStripMenuItem_AutoStart.Checked = _key.GetValue(Name) != null;
+        }
+
+        private void GetTargetProcess()
+        {
+            _targetId = (from process in Process.GetProcesses()
+                where process.ProcessName.ToLower() == TargetName && !string.IsNullOrEmpty(process.MainWindowTitle)
+                select process.Id).FirstOrDefault();
+
+            if(_targetId == default) _targetId = -1;
+        }
+
         [DllImport("user32.dll", SetLastError = true)]
         private static extern IntPtr SetWinEventHook(uint eventMin, uint eventMax, IntPtr hmodWinEventProc,
             WinEventProc lpfnWinEventProc, int idProcess, int idThread, uint dwflags);
@@ -97,9 +111,23 @@ namespace BackgroundMuter
         private void EventCallback(IntPtr hWinEventHook, uint iEvent, IntPtr hWnd, int idObject, int idChild,
             int dwEventThread, int dwmsEventTime)
         {
-            VolumeMixer.SetApplicationMute(_targetId, GetActiveProcessFileName() != "StarRail");
+            ChangeMuteState();
         }
-        
+
+        private void ChangeMuteState()
+        {
+            try
+            {
+                VolumeMixer.SetApplicationMute(_targetId, GetActiveProcessFileName().ToLower() != TargetName);
+            }
+            catch
+            {
+                GetTargetProcess();
+                if (_targetId != -1)
+                    ChangeMuteState();
+            }
+        }
+
         private void ToolStripMenuItem_Exit_Click(object sender, EventArgs e)
         {
             Application.Exit();

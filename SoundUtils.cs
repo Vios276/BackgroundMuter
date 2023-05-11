@@ -47,7 +47,7 @@ namespace BackgroundMuter
         {
             ISimpleAudioVolume volume = GetVolumeObject(pid);
             if (volume == null)
-                return;
+                throw new Exception("TargetProcess not found");
 
             Guid guid = Guid.Empty;
             volume.SetMute(mute, ref guid);
