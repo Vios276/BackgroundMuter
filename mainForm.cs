@@ -1,24 +1,25 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Deployment.Application;
 using System.Diagnostics;
 using System.Linq;
-using System.Reflection;
-using System.Windows.Forms;
 using System.Runtime.InteropServices;
+using System.Windows.Forms;
 using Microsoft.Win32;
 
 namespace BackgroundMuter
 {
     public partial class BackgroundMuter : Form
     {
-        private int _targetId = -1;
-        private const string TargetName = "starrail";
+        private readonly Dictionary<string, int> _targetId = new Dictionary<string, int>();
+        private string _lastProcessName = string.Empty;
+        private static readonly string[] TargetNames = {"starrail","genshinimpact"};
         private readonly RegistryKey _key = Registry.CurrentUser.OpenSubKey("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run", true);
         public BackgroundMuter()
         {
             InitializeComponent();
             Init();
-            ChangeMuteState();
+            ChangeMuteState(GetActiveProcessFileName().ToLower());
             StartListeningForWindowChanges();
         }
 
@@ -31,7 +32,10 @@ namespace BackgroundMuter
 
         private void Init()
         {
-            GetTargetProcess();
+            foreach (var targetName in TargetNames)
+            {
+                UpdateTargetProcessId(targetName);
+            }
             SetStripAutoStart();
             SetStripVersion();
         }
@@ -47,7 +51,7 @@ namespace BackgroundMuter
             }
             else
             {
-                ToolStripMenuItem_version.Text = $@"Portable Build";
+                ToolStripMenuItem_version.Text = @"Portable Build";
             }
         }
 
@@ -56,13 +60,12 @@ namespace BackgroundMuter
             ToolStripMenuItem_AutoStart.Checked = _key.GetValue(Name) != null;
         }
 
-        private void GetTargetProcess()
+        private void UpdateTargetProcessId(string processName)
         {
-            _targetId = (from process in Process.GetProcesses()
-                where process.ProcessName.ToLower() == TargetName && !string.IsNullOrEmpty(process.MainWindowTitle)
+            var targetProcessId = (from process in Process.GetProcesses()
+                where process.ProcessName.ToLower() == processName && !string.IsNullOrEmpty(process.MainWindowTitle)
                 select process.Id).FirstOrDefault();
-
-            if(_targetId == default) _targetId = -1;
+            if(targetProcessId != default) _targetId[processName] = targetProcessId;
         }
 
         [DllImport("user32.dll", SetLastError = true)]
@@ -111,20 +114,22 @@ namespace BackgroundMuter
         private void EventCallback(IntPtr hWinEventHook, uint iEvent, IntPtr hWnd, int idObject, int idChild,
             int dwEventThread, int dwmsEventTime)
         {
-            ChangeMuteState();
+            ChangeMuteState(GetActiveProcessFileName().ToLower());
         }
 
-        private void ChangeMuteState()
+        private void ChangeMuteState(string processName)
         {
+            if(_lastProcessName != string.Empty) VolumeMixer.SetApplicationMute(_targetId[_lastProcessName], _lastProcessName != processName);
+            if (!TargetNames.Contains(processName)) return;
             try
             {
-                VolumeMixer.SetApplicationMute(_targetId, GetActiveProcessFileName().ToLower() != TargetName);
+                VolumeMixer.SetApplicationMute(_targetId[processName], false);
+                _lastProcessName = processName;
             }
             catch
             {
-                GetTargetProcess();
-                if (_targetId != -1)
-                    ChangeMuteState();
+                UpdateTargetProcessId(processName);
+                if (_targetId[processName] != -1) ChangeMuteState(processName);
             }
         }
 
@@ -154,7 +159,10 @@ namespace BackgroundMuter
 
         private void BackgroundMuter_FormClosed(object sender, FormClosedEventArgs e)
         {
-            VolumeMixer.SetApplicationMute(_targetId, false);
+            foreach (var targetName in TargetNames)
+            {
+                VolumeMixer.SetApplicationMute(_targetId[targetName], false);
+            }
         }
 
         private void BackgroundMuter_FormClosing(object sender, FormClosingEventArgs e)

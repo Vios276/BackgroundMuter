@@ -19,6 +19,12 @@ namespace BackgroundMuter
             Application.SetCompatibleTextRenderingDefault(false);
             var form = new BackgroundMuter();
             Application.Run(form);
+            Application.ThreadException += Application_ThreadException;
+        }
+
+        private static void Application_ThreadException(object sender, System.Threading.ThreadExceptionEventArgs e)
+        {
+            Console.WriteLine(e.Exception);
         }
     }
 }
