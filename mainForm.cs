@@ -109,7 +109,12 @@ namespace BackgroundMuter {
 
         private void ChangeMuteState(string processName) {
             if (_lastProcessName != string.Empty) {
-                VolumeMixer.SetApplicationMute(_targetId[_lastProcessName], _lastProcessName != processName);
+                try {
+                    VolumeMixer.SetApplicationMute(_targetId[_lastProcessName], _lastProcessName != processName);
+                }
+                catch {
+                    _lastProcessName = string.Empty;
+                }
             }
 
             if (!TargetNames.Contains(processName)) return;
