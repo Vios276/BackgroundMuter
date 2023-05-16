@@ -124,7 +124,7 @@ namespace BackgroundMuter {
             }
             catch {
                 UpdateTargetProcessId(processName);
-                if (_targetId[processName] != -1) ChangeMuteState(processName);
+                if (_targetId[processName] != -1) VolumeMixer.SetApplicationMute(_targetId[processName], false);
             }
         }
 
