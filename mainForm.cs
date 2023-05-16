@@ -21,6 +21,7 @@ namespace BackgroundMuter {
             Init();
             ChangeMuteState(GetActiveProcessFileName().ToLower());
             StartListeningForWindowChanges();
+            Application.ApplicationExit += Application_ApplicationExit;
         }
 
         protected override void OnLoad(EventArgs e) {
@@ -104,19 +105,22 @@ namespace BackgroundMuter {
 
         private void EventCallback(IntPtr hWinEventHook, uint iEvent, IntPtr hWnd, int idObject, int idChild,
             int dwEventThread, int dwmsEventTime) {
-            ChangeMuteState(GetActiveProcessFileName().ToLower());
+            var lastProcess = GetActiveProcessFileName().ToLower();
+            ChangeLastProcessMuteState(lastProcess);
+            ChangeMuteState(lastProcess);
+        }
+
+        private void ChangeLastProcessMuteState(string processName) {
+            if (_lastProcessName == string.Empty) return;
+            try {
+                VolumeMixer.SetApplicationMute(_targetId[_lastProcessName], _lastProcessName != processName);
+            }
+            catch {
+                _lastProcessName = string.Empty;
+            }
         }
 
         private void ChangeMuteState(string processName) {
-            if (_lastProcessName != string.Empty) {
-                try {
-                    VolumeMixer.SetApplicationMute(_targetId[_lastProcessName], _lastProcessName != processName);
-                }
-                catch {
-                    _lastProcessName = string.Empty;
-                }
-            }
-
             if (!TargetNames.Contains(processName)) return;
             try {
                 VolumeMixer.SetApplicationMute(_targetId[processName], false);
@@ -124,7 +128,7 @@ namespace BackgroundMuter {
             }
             catch {
                 UpdateTargetProcessId(processName);
-                if (_targetId[processName] != -1) VolumeMixer.SetApplicationMute(_targetId[processName], false);
+                if (_targetId[processName] != -1) ChangeMuteState(processName);
             }
         }
 
@@ -159,6 +163,11 @@ namespace BackgroundMuter {
 
         private void BackgroundMuter_FormClosing(object sender, FormClosingEventArgs e) {
             StopListeningForWindowChanges();
+        }
+
+        private void Application_ApplicationExit(object sender, EventArgs e) {
+            BackgroundMuter_FormClosing(null, null);
+            BackgroundMuter_FormClosed(null, null);
         }
     }
 }
