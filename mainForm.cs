@@ -11,7 +11,7 @@ namespace BackgroundMuter {
     public partial class BackgroundMuter : Form {
         private readonly Dictionary<string, int> _targetId = new Dictionary<string, int>();
         private string _lastProcessName = string.Empty;
-        private static readonly string[] TargetNames = { "starrail", "genshinimpact" };
+        private static readonly string[] TargetNames = { "starrail", "genshinimpact", "zenlesszonezero" };
 
         private readonly RegistryKey _key =
             Registry.CurrentUser.OpenSubKey("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run", true);
@@ -40,15 +40,15 @@ namespace BackgroundMuter {
         }
 
         private void SetStripVersion() {
-            if (ApplicationDeployment.IsNetworkDeployed) {
-                var intMajor = ApplicationDeployment.CurrentDeployment.CurrentVersion﻿.Major;
-                var intMinor = ApplicationDeployment.CurrentDeployment.CurrentVersion﻿.Minor;
-                var intBuild = ApplicationDeployment.CurrentDeployment.CurrentVersion﻿.Build;
-                ToolStripMenuItem_version.Text = $@"Version : {intMajor}.{intMinor}.{intBuild}";
-            }
-            else {
-                ToolStripMenuItem_version.Text = @"Portable Build";
-            }
+            //if (ApplicationDeployment.IsNetworkDeployed) {
+            var intMajor = ApplicationDeployment.CurrentDeployment.CurrentVersion﻿.Major;
+            var intMinor = ApplicationDeployment.CurrentDeployment.CurrentVersion﻿.Minor;
+            var intBuild = ApplicationDeployment.CurrentDeployment.CurrentVersion﻿.Build;
+            ToolStripMenuItem_version.Text = $@"Version : {intMajor}.{intMinor}.{intBuild}";
+            //}
+            //else {
+            //    ToolStripMenuItem_version.Text = @"Portable Build";
+            //}
         }
 
         private void SetStripAutoStart() {
@@ -57,8 +57,8 @@ namespace BackgroundMuter {
 
         private void UpdateTargetProcessId(string processName) {
             var targetProcessId = (from process in Process.GetProcesses()
-                where process.ProcessName.ToLower() == processName && !string.IsNullOrEmpty(process.MainWindowTitle)
-                select process.Id).FirstOrDefault();
+                                   where process.ProcessName.ToLower() == processName && !string.IsNullOrEmpty(process.MainWindowTitle)
+                                   select process.Id).FirstOrDefault();
             if (targetProcessId == default) return;
             _targetId[processName] = targetProcessId;
         }
@@ -114,8 +114,7 @@ namespace BackgroundMuter {
             if (_lastProcessName == string.Empty) return;
             try {
                 VolumeMixer.SetApplicationMute(_targetId[_lastProcessName], _lastProcessName != processName);
-            }
-            catch {
+            } catch {
                 _lastProcessName = string.Empty;
             }
         }
@@ -125,8 +124,7 @@ namespace BackgroundMuter {
             try {
                 VolumeMixer.SetApplicationMute(_targetId[processName], false);
                 _lastProcessName = processName;
-            }
-            catch {
+            } catch {
                 UpdateTargetProcessId(processName);
                 if (_targetId[processName] != -1) ChangeMuteState(processName);
             }
@@ -139,12 +137,10 @@ namespace BackgroundMuter {
         private void ToolStripMenuItem_AutoStart_CheckStateChanged(object sender, EventArgs e) {
             if (ToolStripMenuItem_AutoStart.Checked) {
                 _key.SetValue(Name, Application.ExecutablePath);
-            }
-            else {
+            } else {
                 try {
                     _key.DeleteValue(Name);
-                }
-                catch {
+                } catch {
                     Console.WriteLine(e);
                 }
             }
@@ -154,8 +150,7 @@ namespace BackgroundMuter {
             foreach (var targetName in TargetNames) {
                 try {
                     VolumeMixer.SetApplicationMute(_targetId[targetName], false);
-                }
-                catch {
+                } catch {
                     // ignored
                 }
             }
