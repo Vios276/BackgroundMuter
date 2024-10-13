@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Deployment.Application;
 using System.Diagnostics;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
 using Microsoft.Win32;
@@ -40,15 +41,17 @@ namespace BackgroundMuter {
         }
 
         private void SetStripVersion() {
-            //if (ApplicationDeployment.IsNetworkDeployed) {
-            var intMajor = ApplicationDeployment.CurrentDeployment.CurrentVersion﻿.Major;
-            var intMinor = ApplicationDeployment.CurrentDeployment.CurrentVersion﻿.Minor;
-            var intBuild = ApplicationDeployment.CurrentDeployment.CurrentVersion﻿.Build;
+            Version version;
+            if (ApplicationDeployment.IsNetworkDeployed) {
+                version = ApplicationDeployment.CurrentDeployment.CurrentVersion;
+            } else {
+                version = Assembly.GetExecutingAssembly().GetName().Version;
+            }
+            var intMajor = version.Major;
+            var intMinor = version.Minor;
+            var intBuild = version.Build;
+
             ToolStripMenuItem_version.Text = $@"Version : {intMajor}.{intMinor}.{intBuild}";
-            //}
-            //else {
-            //    ToolStripMenuItem_version.Text = @"Portable Build";
-            //}
         }
 
         private void SetStripAutoStart() {
